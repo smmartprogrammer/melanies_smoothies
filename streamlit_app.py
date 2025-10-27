@@ -1,12 +1,13 @@
 import streamlit as st
+from snowflake.snowpark.context import get_active_session
 from snowflake.snowpark.functions import col
 
 
 # Set app title
-st.title(":cup with straw: Customize Your Smoothie!:cup with straw:")
+st.title("My Parents New Healthy Diner")
 
 st.write("""
-**Choose the fruits you want in your custom smoothie!**
+**BreakFast Menu**
 """)
 
 name_on_order = st.text_input('Name on Smoothie:')
@@ -50,5 +51,3 @@ if ingredients_list:
       
         st.success('Your Smoothie is ordered!', icon="✅")
 
-cnx = st.connection("snowflake")
-session = cnx.session()
