@@ -4,7 +4,6 @@ import streamlit as st
 import requests
 import pandas as pd
 
-
 # Set app title
 st.title(":cup_with_straw: Customize Your Smoothie! :cup_with_straw:")
 
@@ -25,19 +24,7 @@ session = create_session()
 # Existing Snowpark DataFrame
 my_dataframe = session.table("SMOOTHIES.PUBLIC.FRUIT_OPTIONS").select(
     col("FRUIT_NAME"),
-    col("SEARCH_ON")if ingredients_list:
-    ingredients_string = ' '
-
-    for fruit_chosen in ingredients_list:
-        ingredients_string += fruit_chosen + ' '
-
-        search_on=pd_df.loc[pd_df['FRUIT_NAME'] == fruit_chosen, 'SEARCH_ON'].iloc[0]
-        #st.write('The search value for ', fruit_chosen,' is ', search_on, '.')
-        
-        st.subheader(fruit_chosen + 'Nutrition Information')
-        smoothiefroot_response = requests.get("https://my.smoothiefroot.com/api/fruit/{search_on}")
-        sf_df = st.dataframe(data=smoothiefroot_response.json(), use_container_width=True)
-
+    col("SEARCH_ON")
 )
 
 # Convert Snowpark DataFrame to pandas DataFrame
@@ -49,22 +36,22 @@ st.dataframe(data=pd_df, use_container_width=True)
 # Display multiselect
 ingredients_list = st.multiselect(
     'Choose up to 5 ingredients:',
-    my_dataframe,
+    pd_df['FRUIT_NAME'].tolist(),
     max_selections=5
 )
 
 if ingredients_list:
-    ingredients_string = ' '
+    ingredients_string = ''
 
     for fruit_chosen in ingredients_list:
         ingredients_string += fruit_chosen + ' '
 
+        # Get the API search value
         search_on = pd_df.loc[pd_df['FRUIT_NAME'] == fruit_chosen, 'SEARCH_ON'].iloc[0]
-        # st.write('The search value for ', fruit_chosen, ' is ', search_on, '.')
 
         st.subheader(f"{fruit_chosen} Nutrition Information")
 
-        # ✅ Fixed API call — now dynamically uses the search_on value
+        # ✅ Correct API call
         smoothiefroot_response = requests.get(f"https://my.smoothiefroot.com/api/fruit/{search_on}")
 
         if smoothiefroot_response.status_code == 200:
@@ -73,16 +60,13 @@ if ingredients_list:
         else:
             st.warning(f"No data found for {fruit_chosen} ({search_on})")
 
-
+    # Insert order into Snowflake
     my_insert_stmt = f"""
         INSERT INTO smoothies.public.orders(ingredients, name_on_order)
         VALUES ('{ingredients_string}', '{name_on_order}')
     """
 
-
-#st.text(smoothiefroot_response.json())
-
-
+# Submit button
 time_to_insert = st.button('Submit Order')
 
 if time_to_insert:
