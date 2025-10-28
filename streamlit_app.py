@@ -2,6 +2,8 @@ from snowflake.snowpark import Session
 from snowflake.snowpark.functions import col
 import streamlit as st
 import requests
+import pandas as pd
+
 
 # Set app title
 st.title(":cup_with_straw: Customize Your Smoothie! :cup_with_straw:")
@@ -20,8 +22,17 @@ def create_session():
 
 session = create_session()
 
-# Read data from your Snowflake table
-my_dataframe = session.table("SMOOTHIES.PUBLIC.FRUIT_OPTIONS").select(col('FRUIT_NAME'))
+# Existing Snowpark DataFrame
+my_dataframe = session.table("SMOOTHIES.PUBLIC.FRUIT_OPTIONS").select(
+    col("FRUIT_NAME"),
+    col("SEARCH_ON")
+)
+
+# Convert Snowpark DataFrame to pandas DataFrame
+pd_df = my_dataframe.to_pandas()
+
+# Display pandas DataFrame in Streamlit
+st.dataframe(data=pd_df, use_container_width=True)
 
 # Display multiselect
 ingredients_list = st.multiselect(
