@@ -1,48 +1,45 @@
-from snowflake.snowpark.context import get_active_session
+from snowflake.snowpark import Session
 from snowflake.snowpark.functions import col
-import requests
 import streamlit as st
+import requests
 
 # Set app title
-st.title(":cup with straw: Customize Your Smoothie!:cup with straw:")
+st.title(":cup_with_straw: Customize Your Smoothie! :cup_with_straw:")
 
 st.write("""
 **Choose the fruits you want in your custom smoothie!**
 """)
 
 name_on_order = st.text_input('Name on Smoothie:')
-st.write('the name on your smoothie will be:', name_on_order)
+st.write('The name on your smoothie will be:', name_on_order)
 
-# Get the active Snowflake session
-session = get_active_session()
+# Create Snowflake session using Streamlit secrets (stored under [connections.snowflake])
+@st.cache_resource
+def create_session():
+    return Session.builder.configs(st.secrets["connections"]["snowflake"]).create()
+
+session = create_session()
 
 # Read data from your Snowflake table
 my_dataframe = session.table("SMOOTHIES.PUBLIC.FRUIT_OPTIONS").select(col('FRUIT_NAME'))
 
-# Display the data
-# st.dataframe(data=my_dataframe, use_container_width=True)
-
+# Display multiselect
 ingredients_list = st.multiselect(
-    'Choose upto 5 ingredients:',
+    'Choose up to 5 ingredients:',
     my_dataframe,
     max_selections=5
 )
 
 if ingredients_list:
-    ingredients_string = ''
-
-    for fruit_chosen in ingredients_list:
-        ingredients_string += fruit_chosen + ' '
-
+    ingredients_string = ' '.join(ingredients_list)
     st.write(ingredients_string)
 
-    my_insert_stmt = """ insert into smoothies.public.orders(ingredients, name_on_order)
-            values ('""" + ingredients_string + """', '""" + name_on_order + """')"""
+    my_insert_stmt = f"""
+        INSERT INTO smoothies.public.orders(ingredients, name_on_order)
+        VALUES ('{ingredients_string}', '{name_on_order}')
+    """
 
-    # st.write(my_insert_stmt)
-    # st.stop()
-
-# new section to display nutritiant
+# New section to display nutrient info
 smoothiefroot_response = requests.get("https://my.smoothiefroot.com/api/fruit/watermelon")
 st.text(smoothiefroot_response.json())
 sf_df = st.dataframe(data=smoothiefroot_response.json(), use_container_width=True)
