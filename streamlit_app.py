@@ -1,7 +1,7 @@
 from snowflake.snowpark.context import get_active_session
 from snowflake.snowpark.functions import col
 import requests
-
+import streamlit as st
 
 # Set app title
 st.title(":cup with straw: Customize Your Smoothie!:cup with straw:")
@@ -13,7 +13,6 @@ st.write("""
 name_on_order = st.text_input('Name on Smoothie:')
 st.write('the name on your smoothie will be:', name_on_order)
 
-
 # Get the active Snowflake session
 session = get_active_session()
 
@@ -21,14 +20,13 @@ session = get_active_session()
 my_dataframe = session.table("SMOOTHIES.PUBLIC.FRUIT_OPTIONS").select(col('FRUIT_NAME'))
 
 # Display the data
-#st.dataframe(data=my_dataframe, use_container_width=True)
+# st.dataframe(data=my_dataframe, use_container_width=True)
 
 ingredients_list = st.multiselect(
-    'Choose upto 5 ingredients:'
-    ,my_dataframe, max_selections=5 
-    
-    #my_dataframe
-    )
+    'Choose upto 5 ingredients:',
+    my_dataframe,
+    max_selections=5
+)
 
 if ingredients_list:
     ingredients_string = ''
@@ -41,20 +39,16 @@ if ingredients_list:
     my_insert_stmt = """ insert into smoothies.public.orders(ingredients, name_on_order)
             values ('""" + ingredients_string + """', '""" + name_on_order + """')"""
 
-    #st.write(my_insert_stmt)
-    #st.stop()
+    # st.write(my_insert_stmt)
+    # st.stop()
 
-#new section to display nutritiant 
-import streamlit as st
+# new section to display nutritiant
 smoothiefroot_response = requests.get("https://my.smoothiefroot.com/api/fruit/watermelon")
 st.text(smoothiefroot_response.json())
 sf_df = st.dataframe(data=smoothiefroot_response.json(), use_container_width=True)
 
-    
-    time_to_insert = st.button('Submit Order')
-    
-    if time_to_insert:
-        session.sql(my_insert_stmt).collect()
-      
-        st.success('Your Smoothie is ordered!', icon="✅")
+time_to_insert = st.button('Submit Order')
 
+if time_to_insert:
+    session.sql(my_insert_stmt).collect()
+    st.success('Your Smoothie is ordered!', icon="✅")
